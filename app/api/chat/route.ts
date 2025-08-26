@@ -26,14 +26,14 @@ interface RagResult {
   similarity: number
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   try {
     // Add timeout to the entire request
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error('Request timeout')), 25000) // 25 second timeout
     )
 
-    const mainProcess = async () => {
+    const mainProcess = async (): Promise<Response> => {
       const { message, messages = [] } = await request.json()
       
       if (!message) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function processChat(message: string, messages: any[]) {
+async function processChat(message: string, messages: any[]): Promise<Response> {
 
     // Build conversation history for context
     const conversationHistory: Message[] = [
