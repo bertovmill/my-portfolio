@@ -28,11 +28,38 @@ interface RagResult {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, messages = [] } = await request.json()
-    
-    if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+    // Add timeout to the entire request
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 25000) // 25 second timeout
+    )
+
+    const mainProcess = async () => {
+      const { message, messages = [] } = await request.json()
+      
+      if (!message) {
+        return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+      }
+
+      return await processChat(message, messages)
     }
+
+    return await Promise.race([mainProcess(), timeoutPromise])
+  } catch (error: any) {
+    console.error('Chat API error:', error)
+    if (error.message === 'Request timeout') {
+      return NextResponse.json(
+        { error: 'Request timed out. Please try a shorter question.' },
+        { status: 408 }
+      )
+    }
+    return NextResponse.json(
+      { error: 'Failed to generate response' },
+      { status: 500 }
+    )
+  }
+}
+
+async function processChat(message: string, messages: any[]) {
 
     // Build conversation history for context
     const conversationHistory: Message[] = [
@@ -84,14 +111,6 @@ export async function POST(request: NextRequest) {
         similarity: result.similarity
       }))
     })
-
-  } catch (error) {
-    console.error('Chat API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate response' },
-      { status: 500 }
-    )
-  }
 }
 
 /**
@@ -220,7 +239,7 @@ async function searchDocumentChunks(query: string, limit: number = 4): Promise<R
       metadata: (row.metadata || {}) as Record<string, unknown>,
       source: row.source as string,
       chunkIndex: row.chunk_index as number,
-      similarity: 0.8,
+      similarity: parseFloat(row.similarity) || 0.8,
     }))
   } catch (error) {
     console.error('Document chunk search failed:', error)

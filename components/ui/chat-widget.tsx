@@ -203,6 +203,10 @@ export default function ChatWidget() {
         content: msg.content
       }))
 
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -212,7 +216,10 @@ export default function ChatWidget() {
           message: userMessage,
           messages: conversationHistory // Send conversation history to maintain context
         }),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error('Failed to send message')
@@ -229,13 +236,25 @@ export default function ChatWidget() {
         timestamp: new Date()
       }
       setMessages(prev => [...prev, assistantMsg])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error)
+      
+      // Enhanced error handling with specific messages
+      let errorContent = "Sorry, I'm having trouble connecting right now. Please try again later."
+      
+      if (error.message?.includes('timeout') || error.name === 'TimeoutError') {
+        errorContent = "The request timed out. Please try asking a shorter question or try again later."
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorContent = "Network connection issue. Please check your internet and try again."
+      } else if (error.message?.includes('504')) {
+        errorContent = "The server is taking longer than expected. Please try again in a moment."
+      }
+      
       // Add error message
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Sorry, I'm having trouble connecting right now. Please try again later.",
+        content: errorContent,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMsg])
