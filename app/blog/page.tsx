@@ -132,14 +132,25 @@ export default function Blog() {
                   />
 
                   <VStack align="stretch" spacing={{ base: 2, md: 3 }}>
-                    <Text 
-                      fontSize={{ base: "xs", md: "sm" }}
-                      color={dateFontColor}
-                      fontFamily="mono"
-                      fontWeight="medium"
-                    >
-                      {formatDate(post.pubDate)}
-                    </Text>
+                    <HStack spacing={3}>
+                      <Text 
+                        fontSize={{ base: "xs", md: "sm" }}
+                        color={dateFontColor}
+                        fontFamily="mono"
+                        fontWeight="medium"
+                      >
+                        {formatDate(post.pubDate)}
+                      </Text>
+                      <Tag
+                        size="sm"
+                        variant="subtle"
+                        colorScheme={post.source === 'substack' ? 'orange' : 'gray'}
+                        fontWeight="medium"
+                        textTransform="capitalize"
+                      >
+                        {post.source}
+                      </Tag>
+                    </HStack>
                     
                     <Text
                       fontSize={{ base: "lg", md: "xl" }}
